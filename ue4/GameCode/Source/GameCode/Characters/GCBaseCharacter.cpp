@@ -152,7 +152,7 @@ void AGCBaseCharacter::StartFire()
 		return;
 	}
 	ARangeWeaponItem* CurrentRangeWeapon = CharacterEquipmentComponent->GetCurrentRangeWeapon();
-	if (IsValid(CurrentRangeWeapon))
+	if (IsValid(CurrentRangeWeapon) && CanFire())
 	{
 		CurrentRangeWeapon->StartFire();
 	}
@@ -170,7 +170,7 @@ void AGCBaseCharacter::StopFire()
 void AGCBaseCharacter::StartAiming()
 {
 	ARangeWeaponItem* CurrentRangeWeapon = GetCharacterEquipmentComponent()->GetCurrentRangeWeapon();
-	if (!IsValid(CurrentRangeWeapon))
+	if (!IsValid(CurrentRangeWeapon) || !CanFire())
 	{
 		return;
 	}
@@ -304,13 +304,14 @@ void AGCBaseCharacter::HardLanding()
 	FTimerHandle HardLandingTimer;
 	GetWorld()->GetTimerManager().SetTimer(HardLandingTimer, this, &AGCBaseCharacter::EndHardLanding, 2.f, false);
 	GetBaseCharacterMovementComponent()->SetMovementMode(MOVE_None);
-
+	DisableMeshRotation();
 	PlayAnimMontage(HardLandingMontage);
 }
 
 void AGCBaseCharacter::EndHardLanding()
 {
 	GetBaseCharacterMovementComponent()->SetMovementMode(MOVE_Walking);
+	EnableMeshRotation();
 }
 
 void AGCBaseCharacter::RegisterInteractiveActor(AInteractiveActor* InteractiveActor)
@@ -563,9 +564,21 @@ bool AGCBaseCharacter::CanWallRun() const
 
 bool AGCBaseCharacter::CanFire() const
 {
+	UAnimInstance * AnimInstance = (GetMesh())? GetMesh()->GetAnimInstance() : nullptr;
+	UAnimMontage* AnimMontage = (AnimInstance) ? AnimInstance->GetCurrentActiveMontage() : nullptr;
+	bool bAnimMontage = false;
+	if (AnimInstance && AnimMontage)
+	{
+		if (AnimInstance->Montage_IsPlaying(AnimMontage))
+		{
+			bAnimMontage = true;
+		}
+	}
+	
 	return GetCharacterAttributesComponent()->IsAlive() && !GetBaseCharacterMovementComponent()->IsOnLadder() && !GetBaseCharacterMovementComponent()->IsMantling()
 	&& !GetBaseCharacterMovementComponent()->IsOnZipline() && !GetBaseCharacterMovementComponent()->IsSwimming() 
-	&& !GetBaseCharacterMovementComponent()->IsOnZipline() && !GetBaseCharacterMovementComponent()->IsOutOfStamina();
+	&& !GetBaseCharacterMovementComponent()->IsFalling() && !GetBaseCharacterMovementComponent()->IsOutOfStamina()
+	&& !GetBaseCharacterMovementComponent()->IsSliding() && !bAnimMontage;
 }
 
 void AGCBaseCharacter::OnDeath()

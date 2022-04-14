@@ -5,6 +5,7 @@
 #include "GameFramework/Character.h"
 #include "Components/CapsuleComponent.h"
 #include "../GameCodeTypes.h"
+#include "Widgets/Text/ISlateEditableTextWidget.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogBaseCharacterMovement, Display, Display)
 
@@ -566,16 +567,19 @@ void UGCBaseCharacterMovementComponent::OnMovementModeChanged(EMovementMode Prev
 
 	if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == (uint8)ECustomMovementMode::CMOVE_Ladder)
 	{
+		GetBaseCharacterOwner()->EnableMeshRotation();
 		CurrentLadder = nullptr;
 	}
 
 	if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == (uint8)ECustomMovementMode::CMOVE_Zipline)
 	{
+		GetBaseCharacterOwner()->EnableMeshRotation();
 		CurrentZipline = nullptr;
 	}
 
 	if (PreviousMovementMode == MOVE_Custom && PreviousCustomMode == (uint8)ECustomMovementMode::CMOVE_WallRun)
 	{
+		GetBaseCharacterOwner()->EnableMeshRotation();
 		GetWorld()->GetTimerManager().ClearTimer(WallRunTimer);
 	}
 
@@ -590,13 +594,24 @@ void UGCBaseCharacterMovementComponent::OnMovementModeChanged(EMovementMode Prev
 			}
 			case (uint8)ECustomMovementMode::CMOVE_WallRun:
 			{
+				GetBaseCharacterOwner()->DisableMeshRotation();
 				FTimerDelegate WallRunTimerDel;
 				WallRunTimerDel.BindUObject(this, &UGCBaseCharacterMovementComponent::StopWallRun, EStopWallRunMethod::Fall);
 				GetWorld()->GetTimerManager().SetTimer(WallRunTimer, WallRunTimerDel, MaxWallRunTime, false);
 				break;
 			}
-			default:
+		case (uint8)ECustomMovementMode::CMOVE_Ladder:
+			{
+				GetBaseCharacterOwner()->DisableMeshRotation();
 				break;
+			}
+		case (uint8)ECustomMovementMode::CMOVE_Zipline:
+			{
+				GetBaseCharacterOwner()->DisableMeshRotation();
+				break;
+			}
+		default:
+			break;
 		}
 	}
 }

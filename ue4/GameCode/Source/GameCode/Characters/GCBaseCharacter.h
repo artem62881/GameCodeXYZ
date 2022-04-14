@@ -131,6 +131,9 @@ public:
 
 	virtual bool CanJumpInternal_Implementation() const override;
 
+	void DisableMeshRotation() { bUseControllerRotationYaw = false; };
+	void EnableMeshRotation() { bUseControllerRotationYaw = true; };
+	
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	FORCEINLINE float GetIKRightFootOffset() const { return IKRightFootOffset; }
 
