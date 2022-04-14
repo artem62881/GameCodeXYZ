@@ -584,6 +584,7 @@ bool AGCBaseCharacter::CanFire() const
 void AGCBaseCharacter::OnDeath()
 {
 	GetCharacterMovement()->DisableMovement();
+	DisableMeshRotation();
 	if (GetCharacterMovement()->IsInWater())
 	{
 		EnableRagdoll();

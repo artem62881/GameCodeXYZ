@@ -6,7 +6,7 @@
 AGCAICharacter::AGCAICharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
-	AIPatrollingComponent = CreateDefaultSubobject<UAIPatrollingComponent>(TEXT("AIPAtrolling"));
+	AIPatrollingComponent = CreateDefaultSubobject<UAIPatrollingComponent>(TEXT("AI Patrolling Component"));
 }
 
 UAIPatrollingComponent* AGCAICharacter::GetAIPatrollingComponent() const

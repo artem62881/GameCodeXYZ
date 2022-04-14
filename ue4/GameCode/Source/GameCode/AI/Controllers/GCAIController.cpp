@@ -3,10 +3,11 @@
 
 #include "GCAIController.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "Perception/AISense_Damage.h"
 
 AGCAIController::AGCAIController()
 {
-		PerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerception"));
+	PerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerception"));
 }
 
 AActor* AGCAIController::GetClosestSensedActor(TSubclassOf<UAISense> SenseClass) const

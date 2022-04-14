@@ -4,7 +4,9 @@
 #include "Turret.h"
 
 #include "AIController.h"
+#include "AI/Controllers/AITurretController.h"
 #include "Components/Weapon/WeaponBarellComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 ATurret::ATurret()
 {
@@ -34,6 +36,14 @@ void ATurret::PossessedBy(AController* NewController)
 	}
 }
 
+void ATurret::BeginPlay()
+{
+	Super::BeginPlay();
+	OnTakeAnyDamage.AddDynamic(this, &ATurret::OnTakeAnyDamageEvent);
+	OnDestroyedEvent.AddDynamic(this, &ATurret::OnDestroyed);
+	Health = MaxHealth;
+}
+
 void ATurret::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -50,6 +60,12 @@ void ATurret::Tick(float DeltaTime)
 				FiringMovement(DeltaTime);
 				break;
 			}
+		case ETurretState::Destroyed:
+			{
+				break;
+			}
+		default:
+			break;
 	}
 }
 
@@ -68,6 +84,29 @@ FVector ATurret::GetPawnViewLocation() const
 FRotator ATurret::GetViewRotation() const
 {
 	return WeaponBarell->GetComponentRotation();
+}
+
+void ATurret::OnTakeAnyDamageEvent(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
+	AController* InstigatedBy, AActor* DamageCauser)
+{
+	if (IsDestroyed())
+	{
+		return;
+	}
+
+	UE_LOG(LogDamage, Warning, TEXT("ATurret::OnTakeAnyDamage %s recieved %.2f amount of damage from %s"), *GetName(), Damage, *DamageCauser->GetName());
+	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth); 
+	
+	if (Health <= 0.f)
+	{
+		UE_LOG(LogDamage, Warning, TEXT("ATurret::OnTakeAnyDamage character %s is killed by: %s"), *GetName(), *DamageCauser->GetName());
+		if (OnDestroyedEvent.IsBound())
+		{
+			OnDestroyedEvent.Broadcast();
+		}
+	}
+	//AGCAIController* Controller = StaticCast<AGCAIController*>(GetController());
+	//TakeDamage(Damage, FDamageEvent(), GetController(), DamageCauser);
 }
 
 void ATurret::SearchingMovement(float DeltaTime)
@@ -125,12 +164,26 @@ void ATurret::SetCurrentTurretState(ETurretState NewState)
 			GetWorld()->GetTimerManager().SetTimer(ShotTimer, this, &ATurret::MakeShot, GetFireInterval(), true, FireDelayTime);
 			break;
 		}
+	case ETurretState::Destroyed:
+		{
+			GetWorld()->GetTimerManager().ClearTimer(ShotTimer);
+			break;
+		}
 	}
 }
 
 float ATurret::GetFireInterval() const
 {
 	return  60.f / RateOfFire;
+}
+
+void ATurret::OnDestroyed()
+{
+	//SpawnEmitter
+	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), DestroyFX, GetActorTransform());
+	SetCurrentTurretState(ETurretState::Destroyed);
+	GetController()->Destroy();
+	UE_LOG(LogDamage, Warning, TEXT("ATurret::OnTakeAnyDamage character %s is killed"), *GetName());
 }
 
 

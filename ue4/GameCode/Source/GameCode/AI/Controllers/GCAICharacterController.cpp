@@ -5,6 +5,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Perception/AISense_Sight.h"
 #include "GameCodeTypes.h"
+#include "Perception/AISense_Damage.h"
 
 void AGCAICharacterController::SetPawn(APawn* InPawn)
 {
@@ -14,6 +15,7 @@ void AGCAICharacterController::SetPawn(APawn* InPawn)
 		checkf(InPawn->IsA<AGCAICharacter>(), TEXT("void AGCAICharacterController::SetPawn(APawn* InPawn) GCAICherecterController can be used only with AICharacter"));
 		CachedAICharacter = StaticCast<AGCAICharacter*>(InPawn);
 		RunBehaviorTree(CachedAICharacter->GetBehaviorTree());
+		CachedAICharacter->OnTakeAnyDamage.AddDynamic(this, &AGCAICharacterController::OnTakeAnyDamageEvent);
 	}
 	else
 	{
@@ -57,9 +59,20 @@ void AGCAICharacterController::BeginPlay()
 	}
 }
 
+void AGCAICharacterController::OnTakeAnyDamageEvent(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
+	AController* InstigatedBy, AActor* DamageCauser)
+{
+	UAISense_Damage::ReportDamageEvent(GetWorld(), DamagedActor, DamageCauser, Damage, DamageCauser->GetActorLocation(), DamagedActor->GetActorLocation());
+}
+
 void AGCAICharacterController::TryMoveToNextTarget()
 {
-	AActor* ClosestActor = GetClosestSensedActor(UAISense_Sight::StaticClass());
+	AActor* ClosestActor = GetClosestSensedActor(UAISense_Damage::StaticClass());
+	if (!ClosestActor)
+	{
+		ClosestActor = GetClosestSensedActor(UAISense_Sight::StaticClass());
+	}
+	
 	UAIPatrollingComponent* PatrollingComponent = CachedAICharacter->GetAIPatrollingComponent();
 	if (IsValid(ClosestActor))
 	{
@@ -73,6 +86,7 @@ void AGCAICharacterController::TryMoveToNextTarget()
 	else if (PatrollingComponent->CanPatrol())
 	{
 		FVector NextWayPoint = bIsPatrolling ? PatrollingComponent->SelectNextWayPoint() : PatrollingComponent->SelectClosestWayPoint();
+		bIsPatrolling = true;
 		if (IsValid(Blackboard))
 		{
 			ClearFocus(EAIFocusPriority::Gameplay);

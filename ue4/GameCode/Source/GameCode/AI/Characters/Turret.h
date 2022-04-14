@@ -8,11 +8,14 @@
 #include "GameFramework/Pawn.h"
 #include "Turret.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDestroyedEventSignature);
+
 UENUM(BlueprintType)
 enum class ETurretState : uint8
 {
 	Searching,
-	Firing
+	Firing,
+	Destroyed
 };
 
 class UWeaponBarellComponent;
@@ -25,6 +28,8 @@ public:
 	ATurret();
 
 	virtual void PossessedBy(AController* NewController) override;
+
+	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaTime) override;
 
@@ -34,6 +39,11 @@ public:
 
 	virtual FRotator GetViewRotation() const override;
 
+	UPROPERTY(VisibleAnywhere, BlueprintAssignable)
+	FOnDestroyedEventSignature OnDestroyedEvent;
+
+	bool IsDestroyed() const { return CurrentTurretState == ETurretState::Destroyed ? true : false; };
+	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USceneComponent* TurretBaseComponent;
@@ -43,6 +53,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UWeaponBarellComponent* WeaponBarell;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "VFX")
+	UParticleSystem* DestroyFX;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Turret Parameters", meta = (ClampMin = 0.f, UIMin = 0.f))
+	float MaxHealth = 100.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Turret Parameters", meta = (ClampMin = 0.f, UIMin = 0.f))
 	float BaseSearchingRotationRate = 60.f;
@@ -70,6 +86,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Turret Parameters | Team")
 	ETeams Team = ETeams::Enemy;
+
+	UFUNCTION()
+	void OnTakeAnyDamageEvent(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+
+	UFUNCTION()
+	void OnDestroyed();
 	
 private:
 	void SearchingMovement(float DeltaTime);
@@ -85,5 +107,6 @@ private:
 	float GetFireInterval() const;
 	
 	FTimerHandle ShotTimer;
-	
+
+	float Health = 100.f;
 };

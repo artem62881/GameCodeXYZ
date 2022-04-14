@@ -17,8 +17,7 @@ class GAMECODE_API AGCAIController : public AAIController
 	GENERATED_BODY()
 public:
 	AGCAIController();
-
+	
 protected:
 	AActor* GetClosestSensedActor(TSubclassOf<UAISense> SenseClass) const;
-	
 };

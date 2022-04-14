@@ -7,14 +7,14 @@
 
 bool UAIPatrollingComponent::CanPatrol() const
 {
-	return IsValid(PatrollingPath) && PatrollingPath->GetWayPoints().Num() > 0;
+	return IsValid(PatrolSettings.PatrollingPath) && PatrolSettings.PatrollingPath->GetWayPoints().Num() > 0;
 }
 
 FVector UAIPatrollingComponent::SelectClosestWayPoint()
 {
 	FVector OwnerLocation = GetOwner()->GetActorLocation();
-	const TArray<FVector> WayPoints = PatrollingPath->GetWayPoints();
-	FTransform PathTransform = PatrollingPath->GetActorTransform();
+	const TArray<FVector> WayPoints = PatrolSettings.PatrollingPath->GetWayPoints();
+	FTransform PathTransform = PatrolSettings.PatrollingPath->GetActorTransform();
 
 	FVector ClosestWayPoint;
 	float MinSqDistance = FLT_MAX;
@@ -34,14 +34,43 @@ FVector UAIPatrollingComponent::SelectClosestWayPoint()
 
 FVector UAIPatrollingComponent::SelectNextWayPoint()
 {
-	++CurrentWayPointIndex;
-	
-	const TArray<FVector> WayPoints = PatrollingPath->GetWayPoints();
-	if (CurrentWayPointIndex == WayPoints.Num())
+	const TArray<FVector> WayPoints = PatrolSettings.PatrollingPath->GetWayPoints();
+
+	switch (PatrolSettings.PatrolMode)
 	{
-		CurrentWayPointIndex = 0;
+	case EPatrolMode::None:
+		{
+			break;
+		}
+		
+	case EPatrolMode::Circle:
+		{
+			++CurrentWayPointIndex;
+			if (CurrentWayPointIndex == WayPoints.Num())
+			{
+				CurrentWayPointIndex = 0;
+			}
+			break;
+		}
+		
+	case EPatrolMode::PingPong:
+		{
+			CurrentWayPointIndex += CurrentPatrolDirection;
+			if (CurrentWayPointIndex == WayPoints.Num())
+			{
+				CurrentPatrolDirection = -1;
+				CurrentWayPointIndex = WayPoints.Num() - 2;
+			}
+			else if (CurrentWayPointIndex <= 0)
+			{
+				CurrentPatrolDirection = 1;
+				CurrentWayPointIndex = 0;
+			}
+			break;
+		}
 	}
-	FTransform PathTransform = PatrollingPath->GetActorTransform();
+	
+	FTransform PathTransform = PatrolSettings.PatrollingPath->GetActorTransform();
 	FVector WayPoint = PathTransform.TransformPosition(WayPoints[CurrentWayPointIndex]);
 	
 	return WayPoint;

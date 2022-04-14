@@ -27,7 +27,10 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category= "Movement")
 	float TargetReachRadius = 100.f;
-	
+
+	UFUNCTION()
+	void OnTakeAnyDamageEvent(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+
 private:
 	void TryMoveToNextTarget();
 	bool IsTargetReached(FVector TargetLocation) const;
