@@ -30,6 +30,7 @@ void AGCAICharacterController::ActorsPerceptionUpdated(const TArray<AActor*>& Up
 	{
 		return;
 	}
+	UE_LOG(LogTemp, Warning, TEXT("ActorsPerceptionUpdated"));
 	TryMoveToNextTarget();
 }
 
@@ -63,33 +64,49 @@ void AGCAICharacterController::OnTakeAnyDamageEvent(AActor* DamagedActor, float 
 	AController* InstigatedBy, AActor* DamageCauser)
 {
 	UAISense_Damage::ReportDamageEvent(GetWorld(), DamagedActor, DamageCauser, Damage, DamageCauser->GetActorLocation(), DamagedActor->GetActorLocation());
+	//TryMoveToNextTarget();
 }
 
 void AGCAICharacterController::TryMoveToNextTarget()
 {
-	AActor* ClosestActor = GetClosestSensedActor(UAISense_Damage::StaticClass());
-	if (!ClosestActor)
-	{
-		ClosestActor = GetClosestSensedActor(UAISense_Sight::StaticClass());
-	}
-	
+	AActor* ClosestActor = GetClosestSensedActor(UAISense_Sight::StaticClass());
 	UAIPatrollingComponent* PatrollingComponent = CachedAICharacter->GetAIPatrollingComponent();
+	
 	if (IsValid(ClosestActor))
 	{
 		if (IsValid(Blackboard))
 		{
+			Blackboard->SetValueAsBool(BB_bForceMove, true);
+			//Blackboard->SetValueAsBool(BB_bForceMove, false);
 			Blackboard->SetValueAsObject(BB_CurrentTarget, ClosestActor);
 			SetFocus(ClosestActor, EAIFocusPriority::Gameplay);
 		}
 		bIsPatrolling = false;
 	}
-	else if (PatrollingComponent->CanPatrol())
+	else
+	{
+		ClosestActor = GetClosestSensedActor(UAISense_Damage::StaticClass());
+		if (IsValid(ClosestActor))
+		{
+			if (IsValid(Blackboard))
+			{
+				ClearFocus(EAIFocusPriority::Gameplay);
+				Blackboard->SetValueAsBool(BB_bForceMove, true);
+				Blackboard->SetValueAsVector(BB_NextLocation, ClosestActor->GetActorLocation());
+				Blackboard->SetValueAsObject(BB_CurrentTarget, nullptr);
+			}
+			bIsPatrolling = false;
+		}
+	}
+	
+	if (PatrollingComponent->CanPatrol() && !IsValid(ClosestActor))
 	{
 		FVector NextWayPoint = bIsPatrolling ? PatrollingComponent->SelectNextWayPoint() : PatrollingComponent->SelectClosestWayPoint();
 		bIsPatrolling = true;
 		if (IsValid(Blackboard))
 		{
 			ClearFocus(EAIFocusPriority::Gameplay);
+			Blackboard->SetValueAsBool(BB_bForceMove, false);
 			Blackboard->SetValueAsVector(BB_NextLocation, NextWayPoint);
 			Blackboard->SetValueAsObject(BB_CurrentTarget, nullptr);
 		}
