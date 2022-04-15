@@ -23,6 +23,7 @@ const FName FXParamTraceEnd = FName("TraceEnd");
 
 const FName BB_CurrentTarget = FName("CurrentTarget");
 const FName BB_NextLocation = FName("NextLocation");
+const FName BB_bForceMove = FName("bForceMoveToLocation");
 
 UENUM(BlueprintType)
 enum class EEquipableItemType : uint8
